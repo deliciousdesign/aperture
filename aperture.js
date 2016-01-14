@@ -45,7 +45,9 @@ var aperture = function($) {
 				result.planes.push(plane_obj);
 			}
 
-			aperture.event_resize();			
+			aperture.event_resize();
+			
+			return result;
 		},
 
 		// Creates a viewport from a div
