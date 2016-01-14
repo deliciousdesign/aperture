@@ -9,47 +9,6 @@ var aperture = function($) {
 	var obj = {
 		viewports: [],
 		suspended: false,
-
-		load_json: function(json) {
-			var result = {};
-			result.json = json;
-
-			viewport.width = json.viewport.width;
-			viewport.height = json.viewport.height;
-			viewport.y_effect = 0;
-
-			// Create planes
-			result.planes = [];
-			//for (var plane_name in json.planes) {
-			for (var i=json.planes.length-1;i>=0;i--) {
-				var plane_desc = json.planes[i];
-				var plane_obj = viewport.create_plane(plane_desc.name);
-
-				plane_obj.width = plane_desc.width;
-				plane_obj.height = plane_desc.height;
-				plane_obj.offset = plane_desc.offset;
-
-				// Create elements within plane
-				for (var el_name in plane_desc.elements) {
-					var el = plane_desc.elements[el_name];
-					var el_settings = {
-						rect: [el.x, el.y, el.width, el.height], 
-						src:"test/" + el.src, 
-						type: "img"
-					};
-					var el = plane_obj.load_element(el_settings);
-				}
-
-				// Store our plane
-				// TO DO: Determine if saving as array is a better choice
-				result.planes.push(plane_obj);
-			}
-
-			aperture.event_resize();
-			
-			return result;
-		},
-
 		// Creates a viewport from a div
 		// Usage aperture.create_viewport("#viewport");
 		create_viewport: function(el, options) {
@@ -88,9 +47,54 @@ var aperture = function($) {
 				/* ==============================================
 				   Public Methods
 				============================================== */
-				load_json: function(url) {
 
+				get_json: function(url) {
+					$.getJSON(url, function(json) {
+						var base_url = url.substring(0, url.lastIndexOf("/")) + "/";
+						vp.load_json_obj(base_url, json);
+					});
 				},
+				load_json_obj: function(base_url, json) {
+					var result = {};
+					result.json = json;
+
+					var viewport = vp;
+					viewport.width = json.viewport.width;
+					viewport.height = json.viewport.height;
+					viewport.y_effect = 0;
+
+					// Create planes
+					result.planes = [];
+					//for (var plane_name in json.planes) {
+					for (var i=json.planes.length-1;i>=0;i--) {
+						var plane_desc = json.planes[i];
+						var plane_obj = viewport.create_plane(plane_desc.name);
+
+						plane_obj.width = plane_desc.width;
+						plane_obj.height = plane_desc.height;
+						plane_obj.offset = plane_desc.offset;
+
+						// Create elements within plane
+						for (var el_name in plane_desc.elements) {
+							var el = plane_desc.elements[el_name];
+							var el_settings = {
+								rect: [el.x, el.y, el.width, el.height], 
+								src:base_url + el.src, 
+								type: "img"
+							};
+							var el = plane_obj.load_element(el_settings);
+						}
+
+						// Store our plane
+						// TO DO: Determine if saving as array is a better choice
+						result.planes.push(plane_obj);
+					}
+
+					aperture.event_resize();
+
+					return result;
+				},
+
 				create_plane: function(name, options) {
 					// Only create plane if it doesn't exist
 					if (typeof indexes[name] === "undefined") {
@@ -120,6 +124,7 @@ var aperture = function($) {
 									case "img":
 										el.element = $("<img>");
 										el.element.attr("src", el.src);
+										el.element.attr("data-pin-no-hover", "data-pin-no-hover"); // gets rid of share buttons
 										//el.element.data("obj", el);
 
 										// Add DOM element
