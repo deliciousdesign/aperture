@@ -2,13 +2,52 @@
  Aperture Animation Library
  
  More info at:
- http://getbacon.net/aperture
+ http://getbacon.net/javascript/aperture
 ==================================================================== */
 var aperture = function($) {
 	// Objects by name. All names are unique in the context of the viewport.
 	var obj = {
 		viewports: [],
 		suspended: false,
+
+		load_json: function(json) {
+			var result = {};
+			result.json = json;
+
+			viewport.width = json.viewport.width;
+			viewport.height = json.viewport.height;
+			viewport.y_effect = 0;
+
+			// Create planes
+			result.planes = [];
+			//for (var plane_name in json.planes) {
+			for (var i=json.planes.length-1;i>=0;i--) {
+				var plane_desc = json.planes[i];
+				var plane_obj = viewport.create_plane(plane_desc.name);
+
+				plane_obj.width = plane_desc.width;
+				plane_obj.height = plane_desc.height;
+				plane_obj.offset = plane_desc.offset;
+
+				// Create elements within plane
+				for (var el_name in plane_desc.elements) {
+					var el = plane_desc.elements[el_name];
+					var el_settings = {
+						rect: [el.x, el.y, el.width, el.height], 
+						src:"test/" + el.src, 
+						type: "img"
+					};
+					var el = plane_obj.load_element(el_settings);
+				}
+
+				// Store our plane
+				// TO DO: Determine if saving as array is a better choice
+				result.planes.push(plane_obj);
+			}
+
+			aperture.event_resize();			
+		},
+
 		// Creates a viewport from a div
 		// Usage aperture.create_viewport("#viewport");
 		create_viewport: function(el, options) {
@@ -25,6 +64,10 @@ var aperture = function($) {
 				scalewidth: 0,
 				transform_type: "",
 				y_mul: 0.15, // Multiply Y by... Good for slowing down the Y axis. Set to 1 for no effect. 
+
+				// Alters how fast plane moves by axis e.g. 0=no movement, .5=half movement, 1=full movement, etc
+				x_effect: 1,
+				y_effect: 1,
 
 				// Variables for shifting perspective
 				shift: {
@@ -124,7 +167,7 @@ var aperture = function($) {
 												el.last_translate.rot != el.translate.rot) {
 
 												// Pos is different. Set.
-												aperture.transform(el.element[0],"translate3d(" + (el.translate.x * vp.scale) + "px, " + (el.translate.y*vp.scale) + "px, 10px)  rotateZ(" + el.translate.rot + "deg)");
+												aperture.transform(el.element[0],"translate3d(" + (el.translate.x * vp.scale) + "px, " + (el.translate.y*vp.scale) + "px, 0px)  rotateZ(" + el.translate.rot + "deg)");
 
 												// Store position for next trans3d call
 												el.last_translate.x = el.translate.x;
@@ -152,7 +195,8 @@ var aperture = function($) {
 								return el;
 							},
 							rescale: function(ignore_children) {
-								plane.scale_offset = vp.scale * plane.offset;
+								plane.scale_offset_x = vp.scale * plane.offset * vp.x_effect;
+								plane.scale_offset_y = vp.scale * plane.offset * vp.y_effect;
 
 								// Rescale children?
 								if (typeof ignore_children === "undefined" || ignore_children == false) {
@@ -307,16 +351,16 @@ var aperture = function($) {
 
 						// Move the plane differently for mouse vs tilt
 						if (vp.shift.mouse_on) {
-							pos_x = -vp.shift.pos_x * plane.scale_offset + (plane.scale_offset / 2);
-							pos_y = -vp.shift.pos_y * (plane.scale_offset * vp.y_mul) + (plane.scale_offset / 2);
+							pos_x = -vp.shift.pos_x * plane.scale_offset_x + (plane.scale_offset_x / 2);
+							pos_y = -vp.shift.pos_y * (plane.scale_offset_y * vp.y_mul) + (plane.scale_offset_y / 2);
 						}
 						else {
-							pos_x = -vp.shift.pos_x * plane.scale_offset + (plane.scale_offset / 2);
-							pos_y = -vp.shift.pos_y * plane.scale_offset + (plane.scale_offset / 2);
+							pos_x = -vp.shift.pos_x * plane.scale_offset_x + (plane.scale_offset_x / 2);
+							pos_y = -vp.shift.pos_y * plane.scale_offset_y + (plane.scale_offset_y / 2);
 						}
 
-						//plane.element.css("transform", "translate3d(" + pos_x + "px, " + pos_y + "px, 10px)  rotateY(" + vp.shift.rot_y + "deg)");
-						aperture.transform(plane.element[0], "translate3d(" + pos_x + "px, " + pos_y + "px, 1px)  rotateY(" + vp.shift.rot_y + "deg)");
+						//plane.element.css("transform", "translate3d(" + pos_x + "px, " + pos_y + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
+						aperture.transform(plane.element[0], "translate3d(" + pos_x + "px, " + pos_y + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
 
 						// Reposition elements inside plane
 						for (i=0;i<plane.elements.length;i++) {
@@ -417,15 +461,17 @@ var aperture = function($) {
 			obj.start_animation_loop();
 
 			// Check if our viewports are still active
-			bacon.always.on("ready", function() {
-				//aperture.event_resize();
-				for (var i=aperture.viewports.length-1; i>=0;i--) {
-					if (aperture.viewports[i].element.parents().find("body").length <= 0) {
-						aperture.viewports[i].has_document = false; // This means its no longer attached to the body
-						aperture.viewports.splice(i, 1); // Remove the dead element
+			if (typeof bacon !== "undefined") {
+				bacon.always.on("ready", function() {
+					//aperture.event_resize();
+					for (var i=aperture.viewports.length-1; i>=0;i--) {
+						if (aperture.viewports[i].element.parents().find("body").length <= 0) {
+							aperture.viewports[i].has_document = false; // This means its no longer attached to the body
+							aperture.viewports.splice(i, 1); // Remove the dead element
+						}
 					}
-				}
-			});
+				});
+			}
 		},
 
 		// These are the master events which are passed to each viewport
@@ -470,15 +516,24 @@ var aperture = function($) {
 		},
 	};
 
-	bacon.page.on("ready", function() {
-		obj.init();
-	});
+	if (typeof bacon !== "undefined") {
+		bacon.page.on("ready", function() {
+			obj.init();
+		});
 
-	// This is called after a "load" instead of ready because most page loads will hide content via "display:none". 
-	// We need to resize objects once they are visible and "load" comes after the page has loaded
-	bacon.always.on("load", function() {
-		aperture.event_resize();
-	});
+		// This is called after a "load" instead of ready because most page loads will hide content via "display:none". 
+		// We need to resize objects once they are visible and "load" comes after the page has loaded
+		bacon.always.on("load", function() {
+			aperture.event_resize();
+		});
+	}
+	else {
+		$(document).ready(function() {
+			obj.init();
+		});
+		
+		obj.event_resize();
+	}
 	return obj;
 }(jQuery);
 
