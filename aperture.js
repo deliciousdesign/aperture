@@ -48,10 +48,14 @@ var aperture = function($) {
 				   Public Methods
 				============================================== */
 
-				get_json: function(url) {
+				get_json: function(url, callback) {
 					$.getJSON(url, function(json) {
 						var base_url = url.substring(0, url.lastIndexOf("/")) + "/";
 						vp.load_json_obj(base_url, json);
+
+						if (typeof callback === "function") {
+							callback();
+						}
 					});
 				},
 				load_json_obj: function(base_url, json) {
