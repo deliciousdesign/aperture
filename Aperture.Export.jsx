@@ -1,4 +1,3 @@
-
 #target photoshop
 // I am using 'JSON in JavaScript' for formatting the data http://www.json.org/js.html
 #include "utils/json2.js"
@@ -86,6 +85,7 @@ var plugin = {
 		var last_layer = plugin.doc.layers[0];
 
 		// Now process each plane
+
 		for (var i=0; i<plugin.doc.layers.length; i++) {
 
 			var layer = plugin.doc.layers[i];
@@ -107,8 +107,15 @@ var plugin = {
 			last_layer.visible = false;
 			layer.visible = true;
 
+
 			// For hiding/showing elements
 			var last_element = layer.layers[0];
+
+
+			// Hide all elements
+			for (var e=0;e<layer.layers.length;e++) {
+				layer.layers[e].visible = false;
+			}			
 
 			// Now process all the elements within this plane
 			for (var e=0;e<layer.layers.length;e++) {
@@ -117,14 +124,14 @@ var plugin = {
 				var element = {};
 
 				// Inherit settings from our layer
-				plugin.extend(element_params, layer_params);
+				plugin.extend(layer_params, element_params);
 
 				// Make last layer invisible and this layer visible
 				last_element.visible = false;
 				element_layer.visible = true;
 
 				// Get element bounds
-				var b = layer.bounds;
+				var b = element_layer.bounds;
 				element.x = parseInt(b[0]);
 				element.y = parseInt(b[1]);
 				element.width = parseInt(b[2]) - parseInt(b[0]);
@@ -132,6 +139,7 @@ var plugin = {
 
 				element.name = plugin.unique_name(element_params.name, plane.elements);
 				element.type = "img";
+
 
 				// Copy to another image so we can save it
 				var new_doc = plugin.copy_element_to_new_doc(plugin.doc, element);
@@ -151,7 +159,7 @@ var plugin = {
 
 				// Close the new document without saving changes
 				new_doc.close(SaveOptions.DONOTSAVECHANGES);
-
+				
 				plane.elements.push(element);
 
 				// So we can hide this element next time
@@ -168,6 +176,9 @@ var plugin = {
 		}
 
 		plugin.save_json(plugin.path + "aperture.json");
+	},
+	process_elements: function() {
+
 	},
 	copy_element_to_new_doc: function(doc, element_params) {
 		doc.selection.selectAll();
@@ -266,5 +277,3 @@ var plugin = {
 	}
 };
 plugin.run();
-
-
