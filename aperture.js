@@ -86,7 +86,7 @@ var aperture = function($) {
 								src:base_url + el.src, 
 								type: "img"
 							};
-							var el = plane_obj.load_element(el_settings);
+							var el = plane_obj.load_element(el.name, el_settings);
 						}
 
 						// Store our plane
@@ -110,7 +110,7 @@ var aperture = function($) {
 							translate: {x:0, y:0, rot: 0},
 							element: {},
 							elements: [],
-							load_element: function(options) {
+							load_element: function(el_name, options) {
 								var el = {};
 								el.src = options.src;
 								el.type = options.type;
@@ -129,6 +129,7 @@ var aperture = function($) {
 										el.element = $("<img>");
 										el.element.attr("src", el.src);
 										el.element.attr("data-pin-no-hover", "data-pin-no-hover"); // gets rid of share buttons
+										el.element.attr("data-name", el_name); // gets rid of share buttons
 										//el.element.data("obj", el);
 
 										// Add DOM element
@@ -222,6 +223,7 @@ var aperture = function($) {
 						$.extend(plane, options);
 
 						plane.element = $('<div class="plane"></div>');
+						plane.element.attr('data-name', name);
 						vp.element.append(plane.element);
 
 						vp.planes.push(plane);
@@ -371,7 +373,7 @@ var aperture = function($) {
 						}
 
 						//plane.element.css("transform", "translate3d(" + pos_x + "px, " + pos_y + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
-						aperture.transform(plane.element[0], "translate3d(" + pos_x + "px, " + pos_y + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
+						aperture.transform(plane.element[0], "translate3d(" + (pos_x + plane.translate.x * vp.scale) + "px, " + (pos_y + plane.translate.y * vp.scale) + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
 
 						// Reposition elements inside plane
 						for (i=0;i<plane.elements.length;i++) {
