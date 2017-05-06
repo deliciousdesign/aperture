@@ -48,14 +48,10 @@ var aperture = function($) {
 				   Public Methods
 				============================================== */
 
-				get_json: function(url, callback) {
+				get_json: function(url) {
 					$.getJSON(url, function(json) {
 						var base_url = url.substring(0, url.lastIndexOf("/")) + "/";
 						vp.load_json_obj(base_url, json);
-
-						if (typeof callback === "function") {
-							callback();
-						}
 					});
 				},
 				load_json_obj: function(base_url, json) {
@@ -65,7 +61,7 @@ var aperture = function($) {
 					var viewport = vp;
 					viewport.width = json.viewport.width;
 					viewport.height = json.viewport.height;
-					viewport.y_effect = 0;
+					viewport.y_mul = json.viewport.y_mul;
 
 					// Create planes
 					result.planes = [];
@@ -86,7 +82,7 @@ var aperture = function($) {
 								src:base_url + el.src, 
 								type: "img"
 							};
-							var el = plane_obj.load_element(el.name, el_settings);
+							var el = plane_obj.load_element(el_settings);
 						}
 
 						// Store our plane
@@ -110,7 +106,7 @@ var aperture = function($) {
 							translate: {x:0, y:0, rot: 0},
 							element: {},
 							elements: [],
-							load_element: function(el_name, options) {
+							load_element: function(options) {
 								var el = {};
 								el.src = options.src;
 								el.type = options.type;
@@ -129,7 +125,6 @@ var aperture = function($) {
 										el.element = $("<img>");
 										el.element.attr("src", el.src);
 										el.element.attr("data-pin-no-hover", "data-pin-no-hover"); // gets rid of share buttons
-										el.element.attr("data-name", el_name); // gets rid of share buttons
 										//el.element.data("obj", el);
 
 										// Add DOM element
@@ -231,6 +226,7 @@ var aperture = function($) {
 						return plane;
 					}
 					else {
+						return indexes[name];
 						return false;
 					}
 				},
@@ -276,14 +272,32 @@ var aperture = function($) {
 
 					vp.shift.mouse_on = true;
 
+
 					if (vp.scalewidth > 0 && vp.scaleheight > 0) {
+						// Old method is relative to the page size.
+						/*
 						vp.shift.mouse_x = e.pageX/vp.scalewidth;
 						vp.shift.mouse_y = e.pageY/vp.scaleheight;
+						*/
+
+						// New method is relative to browser size
+						// 1. Get decimal position relative to page center
+						vp.shift.mouse_x = e.clientX/window.innerWidth;
+						vp.shift.mouse_y = e.clientY/window.innerHeight;
+
+						// Move relative to center
+						vp.shift.mouse_x -= 0.5;
+						vp.shift.mouse_y -= 0.5;
+						vp.shift.mouse_y = vp.shift.mouse_y * vp.y_mul;
+
 
 						// Low pass filter mouse movement by 10%
 						var alpha = 0.1;
 						vp.shift.pos_x = vp.shift.mouse_x * alpha + (vp.shift.pos_x * (1.0 - alpha));
 						vp.shift.pos_y = vp.shift.mouse_y * alpha + (vp.shift.pos_y * (1.0 - alpha));
+
+
+						//console.log(vp.shift);
 					}
 				},
 				event_devicemotion: function(event) {  
@@ -363,9 +377,19 @@ var aperture = function($) {
 						var pos_y = 0;
 
 						// Move the plane differently for mouse vs tilt
+						/*
 						if (vp.shift.mouse_on) {
 							pos_x = -vp.shift.pos_x * plane.scale_offset_x + (plane.scale_offset_x / 2);
-							pos_y = -vp.shift.pos_y * (plane.scale_offset_y * vp.y_mul) + (plane.scale_offset_y / 2);
+							pos_y = -vp.shift.pos_y * (plane.scale_offset_y) + (plane.scale_offset_y / 2);
+						}
+						else {
+							pos_x = -vp.shift.pos_x * plane.scale_offset_x + (plane.scale_offset_x / 2);
+							pos_y = -vp.shift.pos_y * plane.scale_offset_y + (plane.scale_offset_y / 2);
+						}
+						*/
+						if (vp.shift.mouse_on) {
+							pos_x = -vp.shift.pos_x * plane.scale_offset_x;
+							pos_y = -vp.shift.pos_y * plane.scale_offset_y;
 						}
 						else {
 							pos_x = -vp.shift.pos_x * plane.scale_offset_x + (plane.scale_offset_x / 2);
@@ -373,7 +397,7 @@ var aperture = function($) {
 						}
 
 						//plane.element.css("transform", "translate3d(" + pos_x + "px, " + pos_y + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
-						aperture.transform(plane.element[0], "translate3d(" + (pos_x + plane.translate.x * vp.scale) + "px, " + (pos_y + plane.translate.y * vp.scale) + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
+						aperture.transform(plane.element[0], "translate3d(" + pos_x + "px, " + pos_y + "px, 0px)  rotateY(" + vp.shift.rot_y + "deg)");
 
 						// Reposition elements inside plane
 						for (i=0;i<plane.elements.length;i++) {
