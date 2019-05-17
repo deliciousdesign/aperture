@@ -1,0 +1,29 @@
+.aperture-viewport {
+  -webkit-perspective: 500px;
+  /* Chrome, Safari, Opera */
+
+  perspective: 500px;
+  overflow: hidden;
+}
+.aperture-viewport .plane {
+  position: relative;
+  left: 0px;
+  top: 0px;
+}
+.aperture-viewport .plane img,
+.aperture-viewport .plane video,
+.aperture-viewport .plane canvas {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  max-width: none;
+}
+.aperture-viewport .plane video {
+  background: transparent;
+}
+.aperture-viewport .plane div {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  max-width: none;
+}
