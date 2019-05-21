@@ -37,14 +37,14 @@ var aperture = function($) {
 		 
 				});
 				return myself;
-			}
+			};
 		 
 			obj.Run = function (onComplete) {
 				if (onComplete != null)
 					obj.onComplete = onComplete;
 		 
 				obj.execNextFuncInTheChain(0);
-			}
+			};
 		 
 			obj.execNextFuncInTheChain = function (index) {
 				if (obj.chainList[index] != null) {
@@ -52,7 +52,7 @@ var aperture = function($) {
 				} else {
 					obj.onComplete();
 				}
-			}
+			};
 		 
 			return obj;
 		},
